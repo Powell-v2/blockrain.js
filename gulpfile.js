@@ -6,7 +6,7 @@ concat = require("gulp-concat"),
 header = require("gulp-header"),
 zip = require("gulp-zip"),
 runSequence = require('run-sequence');
- 
+
 var getVersion = function () {
     info = require("./package.json");
     return info.version;
@@ -59,7 +59,7 @@ gulp.task('dist', function () {
 
 
 gulp.task('build', function(callback){
-  runSequence('clean', 
+  runSequence('clean',
               'js', 'css', 'blocks', 'readme', 'dist',
               callback);
 });

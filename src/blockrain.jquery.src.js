@@ -7,17 +7,17 @@
     options: {
       autoplay: false, // Let a bot play the game
       autoplayRestart: true, // Restart the game automatically once a bot loses
-      showFieldOnStart: true, // Show a bunch of random blocks on the start screen (it looks nice)
-      theme: null, // The theme name or a theme object
-      blockWidth: 10, // How many blocks wide the field is (The standard is 10 blocks)
+      showFieldOnStart: false, // Show a bunch of random blocks on the start screen (it looks nice)
+      theme: 'brenger', // The theme name or a theme object
+      blockWidth: 8, // How many blocks wide the field is (The standard is 10 blocks)
       autoBlockWidth: false, // The blockWidth is dinamically calculated based on the autoBlockSize. Disabled blockWidth. Useful for responsive backgrounds
       autoBlockSize: 24, // The max size of a block for autowidth mode
       difficulty: 'normal', // Difficulty (normal|nice|evil).
       speed: 20, // The speed of the game. The higher, the faster the pieces go.
-      asdwKeys: true, // Enable ASDW keys
+      asdwKeys: false, // Enable ASDW keys
 
       // Copy
-      playText: 'Let\'s play some Tetris',
+      playText: 'Breng it on!',
       playButtonText: 'Play',
       gameOverText: 'Game Over',
       restartButtonText: 'Play Again',
@@ -34,6 +34,23 @@
       onLine: function(lines, scoreIncrement, score){}
     },
 
+    // Custom code.
+    __attachGameInitKeyHandlers: function() {
+      var game = this
+
+      function gameStartHandler(evt) {
+        switch(evt.keyCode) {
+          case 37:
+          case 38:
+          case 39:
+          case 40:
+            game.start()
+            $(document).off('keyup', gameStartHandler)
+          default: break
+        }
+      }
+      $(document).on('keyup', gameStartHandler)
+    },
 
     /**
      * Start/Restart Game
@@ -117,6 +134,7 @@
     },
 
     showGameOverMessage: function() {
+      this.__attachGameInitKeyHandlers()
       this._$gameover.show();
     },
 
@@ -124,12 +142,12 @@
      * Update the sizes of the renderer (this makes the game responsive)
      */
     updateSizes: function() {
-
       this._PIXEL_WIDTH = this.element.innerWidth();
       this._PIXEL_HEIGHT = this.element.innerHeight();
 
       this._BLOCK_WIDTH = this.options.blockWidth;
-      this._BLOCK_HEIGHT = Math.floor(this.element.innerHeight() / this.element.innerWidth() * this._BLOCK_WIDTH);
+      // this._BLOCK_HEIGHT = Math.floor(this.element.innerHeight() / this.element.innerWidth() * this._BLOCK_WIDTH);
+      this._BLOCK_HEIGHT = 10;
 
       this._block_size = Math.floor(this._PIXEL_WIDTH / this._BLOCK_WIDTH);
       this._border_width = 2;
@@ -286,8 +304,8 @@
             var cx = x * this._block_size;
             var cy = y * this._block_size;
 
-            this._ctx.drawImage(  this._theme.backgroundGrid, 
-                                  0, 0, this._theme.backgroundGrid.width, this._theme.backgroundGrid.height, 
+            this._ctx.drawImage(  this._theme.backgroundGrid,
+                                  0, 0, this._theme.backgroundGrid.width, this._theme.backgroundGrid.height,
                                   cx, cy, this._block_size, this._block_size);
           }
         }
@@ -328,12 +346,12 @@
        * Keep in mind that the blocks should keep in the same relative position when rotating,
        * to allow for custom per-block themes.
        */
-      /*            
-       *   X      
-       *   O  XOXX
-       *   X      
+      /*
        *   X
-       *   .   .      
+       *   O  XOXX
+       *   X
+       *   X
+       *   .   .
        */
       line: [
           [ 0, -1,   0, -2,   0, -3,   0, -4],
@@ -363,9 +381,9 @@
         [1, -2,   1, -1,   1,  0,   2, -1]
       ],
       /*
-       *    X    X XX 
-       *    O  XOX  O XOX 
-       *   .XX .   .X X   
+       *    X    X XX
+       *    O  XOX  O XOX
+       *   .XX .   .X X
        */
       rightHook: [
         [2,  0,   1,  0,   1, -1,   1, -2],
@@ -374,9 +392,9 @@
         [0,  0,   0, -1,   1, -1,   2, -1]
       ],
       /*
-       *    X      XX X  
+       *    X      XX X
        *    O XOX  O  XOX
-       *   XX . X .X  .  
+       *   XX . X .X  .
        */
       leftHook: [
         [0,  0,   1,  0,   1, -1,   1, -2],
@@ -385,9 +403,9 @@
         [0, -2,   0, -1,   1, -1,   2, -1]
       ],
       /*
-       *    X  XX 
+       *    X  XX
        *   XO   OX
-       *   X   .  
+       *   X   .
        */
       leftZag: [
         [0,  0,   0, -1,   1, -1,   1, -2],
@@ -396,9 +414,9 @@
         [0, -2,   1, -2,   1, -1,   2, -1]
       ],
       /*
-       *   X    
+       *   X
        *   XO   OX
-       *   .X  XX   
+       *   .X  XX
        */
       rightZag: [
         [1,  0,   1, -1,   0, -1,   0, -2],
@@ -584,9 +602,9 @@
         add: function(x, y, blockType, blockVariation, blockIndex, blockOrientation) {
           if (x >= 0 && x < game._BLOCK_WIDTH && y >= 0 && y < game._BLOCK_HEIGHT) {
             this.data[this.asIndex(x, y)] = {
-              blockType: blockType, 
-              blockVariation: blockVariation, 
-              blockIndex: blockIndex, 
+              blockType: blockType,
+              blockVariation: blockVariation,
+              blockIndex: blockIndex,
               blockOrientation: blockOrientation
             };
           }
@@ -628,6 +646,80 @@
             if (mod == game._BLOCK_WIDTH - 1 && count == game._BLOCK_WIDTH) {
               rows.push(this.asY(i));
             }
+          }
+
+          if (rows.length > 0) {
+            // Search the CSSOM for a specific keyframe rule.
+            function findKeyframesRule(rule) {
+              var ss = document.styleSheets
+
+              for (var i = 1; i < ss.length; ++i) {
+                for (var j = 0; j < ss[i].cssRules.length; ++j) {
+                  if (ss[i].cssRules[j].name === rule) {
+                    return ss[i].cssRules[j];
+                  }
+                }
+              }
+
+              return null;
+            }
+
+            // Extract blown lines to a separate canvas.
+            var canvasClone = $('.game_canvas').clone()
+            var canvasCloneEl = canvasClone[0]
+            var canvasCloneCtx = canvasCloneEl.getContext('2d')
+            var width = canvasCloneEl.width
+            var height = (canvasCloneEl.height / game._BLOCK_HEIGHT) * rows.length
+            var startClippingX = (canvasCloneEl.height / game._BLOCK_HEIGHT) * rows[0]
+            canvasCloneEl.width = width
+            canvasCloneEl.height = height
+            canvasCloneCtx.drawImage(
+              game._canvas, // old canvas
+              0, // startClippingX
+              startClippingX, // startClippingY
+              width, // clippingWidth
+              height, // clippingHeight
+              0, // paste X
+              0, // paste Y
+              width, // pasteWidth
+              height, // pasteHeight
+            )
+
+            // Define elements to manipulate.
+            var img = $('<img class="blown" />')
+            img.attr('src', canvasCloneEl.toDataURL())
+            img.css({
+              animation: 'blown-y 1.2s ease-out forwards',
+            })
+            var wrapper = $('<div />')
+            wrapper.css({
+              position: 'absolute',
+              top: startClippingX,
+              width,
+              height,
+              animation: 'blown-x 1.2s ease-in forwards'
+            })
+
+            // Set animation target.
+            var keyframeY = findKeyframesRule('blown-y')
+            // TODO: define dynamically based on line number
+            var peak = '62.5%'
+            keyframeY.appendRule(
+              peak + ' {' +
+                'animation-timing-function: ease-in;' +
+                'transform: translateY(-200px);' +
+              '}'
+            )
+            keyframeY.appendRule(
+              '100% {' +
+                'transform: translateY(' + (game._canvas.height / 2) + 'px);' +
+              '}'
+            )
+
+            // Add elements to the DOM.
+            img.appendTo(wrapper)
+            wrapper.appendTo('.game')
+            // setTimeout(() => wrapper.remove(), 1400)
           }
 
           for (i=0, len=rows.length; i<len; i++) {
@@ -734,6 +826,7 @@
         },
 
         showStartMessage: function() {
+          game.__attachGameInitKeyHandlers()
           game._$start.show();
         },
 
@@ -806,10 +899,10 @@
           if( !this.paused && !this.gameover ) {
 
             this.dropCount++;
-            
+
             // Drop by delay or holding
-            if( (this.dropCount >= this.dropDelay) || 
-                (game.options.autoplay) || 
+            if( (this.dropCount >= this.dropDelay) ||
+                (game.options.autoplay) ||
                 (this.holding.drop && (now - this.holding.drop) >= this.holdingThreshold) ) {
               drop = true;
             moved = true;
@@ -940,11 +1033,10 @@
 
         /**
          * Draws one block (Each piece is made of 4 blocks)
-         * The blockType is used to draw any block. 
+         * The blockType is used to draw any block.
          * The falling attribute is needed to apply different styles for falling and placed blocks.
          */
         drawBlock: function(x, y, blockType, blockVariation, blockIndex, blockRotation, falling) {
-
           // convert x and y to pixel
           x = x * game._block_size;
           y = y * game._block_size;
@@ -984,7 +1076,7 @@
                 var maxY = Math.max(positions[1], positions[3], positions[5], positions[7]);
                 var rangeX = maxX - minX + 1;
                 var rangeY = maxY - minY + 1;
-                
+
                 // X and Y sizes should match. Should.
                 var tileSizeX = image.width / rangeX;
                 var tileSizeY = image.height / rangeY;
@@ -1004,9 +1096,9 @@
               game._ctx.translate(x, y);
               game._ctx.translate(game._block_size/2, game._block_size/2);
               game._ctx.rotate(-Math.PI/2 * blockRotation);
-              game._ctx.drawImage(color,  coords.x, coords.y, coords.w, coords.h, 
+              game._ctx.drawImage(color,  coords.x, coords.y, coords.w, coords.h,
                                           -game._block_size/2, -game._block_size/2, game._block_size, game._block_size);
-              
+
               game._ctx.restore();
 
             } else {
@@ -1073,7 +1165,7 @@
             if( $.isArray(blockTheme) ) {
               if( blockVariation !== null && typeof blockTheme[blockVariation] !== 'undefined' ) {
                 return blockTheme[blockVariation];
-              } 
+              }
               else if(blockTheme.length > 0) {
                 return blockTheme[0];
               } else {
@@ -1201,7 +1293,7 @@
       this.element.html('').append(this._$gameholder);
 
       // Create the game canvas and context
-      this._$canvas = $('<canvas style="display:block; width:100%; height:100%; padding:0; margin:0; border:none;" />');
+      this._$canvas = $('<canvas class="game_canvas"style="display:block; width:100%; height:100%; padding:0; margin:0; border:none;" />');
       if( typeof this._theme.background === 'string' ) {
         this._$canvas.css('background-color', this._theme.background);
       }
@@ -1233,22 +1325,15 @@
         '<div class="blockrain-start-holder" style="position:absolute;">'+
           '<div class="blockrain-start">'+
             '<div class="blockrain-start-msg">'+ this.options.playText +'</div>'+
-            '<a class="blockrain-btn blockrain-start-btn">'+ this.options.playButtonText +'</a>'+
           '</div>'+
         '</div>').hide();
       game._$gameholder.append(game._$start);
-
-      game._$start.find('.blockrain-start-btn').click(function(event){
-        event.preventDefault();
-        game.start();
-      });
 
       // Create the game over menu
       game._$gameover = $(
         '<div class="blockrain-game-over-holder" style="position:absolute;">'+
           '<div class="blockrain-game-over">'+
             '<div class="blockrain-game-over-msg">'+ this.options.gameOverText +'</div>'+
-            '<a class="blockrain-btn blockrain-game-over-btn">'+ this.options.restartButtonText +'</a>'+
           '</div>'+
         '</div>').hide();
       game._$gameover.find('.blockrain-game-over-btn').click(function(event){
@@ -1428,31 +1513,31 @@
       var moveLeft = function(start) {
         if( ! start ) { game._board.holding.left = null; return; }
         if( ! game._board.holding.left ) {
-          game._board.cur.moveLeft(); 
+          game._board.cur.moveLeft();
           game._board.holding.left = Date.now();
-          game._board.holding.right = null; 
+          game._board.holding.right = null;
         }
       }
       var moveRight = function(start) {
         if( ! start ) { game._board.holding.right = null; return; }
         if( ! game._board.holding.right ) {
-          game._board.cur.moveRight(); 
-          game._board.holding.right = Date.now(); 
-          game._board.holding.left = null; 
+          game._board.cur.moveRight();
+          game._board.holding.right = Date.now();
+          game._board.holding.left = null;
         }
       }
       var drop = function(start) {
         if( ! start ) { game._board.holding.drop = null; return; }
         if( ! game._board.holding.drop ) {
-          game._board.cur.drop(); 
+          game._board.cur.drop();
           game._board.holding.drop = Date.now();
         }
       }
       var rotateLeft = function() {
-        game._board.cur.rotate('left'); 
+        game._board.cur.rotate('left');
       }
       var rotateRight = function() {
-        game._board.cur.rotate('right'); 
+        game._board.cur.rotate('right');
       }
 
       // Handlers: These are used to be able to bind/unbind controls
@@ -1536,12 +1621,12 @@
 
       if( ! game.options.autoplay ) {
         if( enable ) {
-          $(document) .bind('keydown.blockrain', keydown)
-                      .bind('keyup.blockrain', keyup);
+          $(document)
+            .bind('keydown.blockrain', keydown)
+            .bind('keyup.blockrain', keyup);
         }
       }
     },
-
 
     _setupTouchControls: function(enable) {
 
