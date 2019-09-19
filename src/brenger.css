@@ -12,23 +12,21 @@ body {
   background-image: url('../assets/images/bg_logo.png');
   background-size: cover;
   display: flex;
+  align-items: center;
 }
 .game {
   position: relative;
-  align-self: center;
+  margin-left: 25px;
+}
+.van {
+  width: 200px;
+  height: 100px;
+  margin-left: 50px;
+  margin-top: 270px;
 }
 
 @keyframes blown-x {
   100% {
-    transform: translateX(350px);
+    transform: translateX(330px);
   }
-}
-@keyframes blown-y {
-  /* 62.5% {
-    animation-timing-function: ease-in;
-    transform: translateY(-200px);
-  }
-  100% {
-    transform: translateY(0);
-  } */
 }

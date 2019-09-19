@@ -649,77 +649,126 @@
           }
 
           if (rows.length > 0) {
-            // Search the CSSOM for a specific keyframe rule.
-            function findKeyframesRule(rule) {
-              var ss = document.styleSheets
-
-              for (var i = 1; i < ss.length; ++i) {
-                for (var j = 0; j < ss[i].cssRules.length; ++j) {
-                  if (ss[i].cssRules[j].name === rule) {
-                    return ss[i].cssRules[j];
-                  }
-                }
-              }
-
-              return null;
-            }
-
             // Extract blown lines to a separate canvas.
             var canvasClone = $('.game_canvas').clone()
             var canvasCloneEl = canvasClone[0]
             var canvasCloneCtx = canvasCloneEl.getContext('2d')
-            var width = canvasCloneEl.width
-            var height = (canvasCloneEl.height / game._BLOCK_HEIGHT) * rows.length
-            var startClippingX = (canvasCloneEl.height / game._BLOCK_HEIGHT) * rows[0]
-            canvasCloneEl.width = width
-            canvasCloneEl.height = height
-            canvasCloneCtx.drawImage(
-              game._canvas, // old canvas
-              0, // startClippingX
-              startClippingX, // startClippingY
-              width, // clippingWidth
-              height, // clippingHeight
-              0, // paste X
-              0, // paste Y
-              width, // pasteWidth
-              height, // pasteHeight
+            var rowHeight = (canvasCloneEl.height / game._BLOCK_HEIGHT)
+
+            var rowIdxMin = Math.min(...rows)
+            var rowIdxMax = Math.max(...rows)
+            var rowsAmount = rows.length
+            var rowsRange = rowIdxMax - rowIdxMin + 1
+
+            var clipWidth = canvasCloneEl.width
+            var clipHeight = rowHeight * rowsRange
+            var startClippingX = 0
+            var startClippingY = (canvasCloneEl.height / game._BLOCK_HEIGHT) * rowIdxMin
+            var pasteX = 0
+            var pasteY = 0
+
+            canvasCloneEl.width = clipWidth
+            canvasCloneEl.height = clipHeight
+
+            // Define animation.
+            var [ stylesheet ] = Array.from(document.styleSheets)
+              .filter(({ title }) => title === `main`)
+            var peak = '62.5%'
+            var dropDownHeight = game._canvas.height - (rowHeight * (rowIdxMax + 1))
+            var ruleName = `blown-y`
+            stylesheet.insertRule(
+              `@keyframes ${ruleName} {
+                ${peak} {
+                  animation-timing-function: ease-in;
+                  transform: translateY(-200px);
+                }
+
+                100% {
+                  transform: translateY(${dropDownHeight}px);
+                }
+              }`,
+              0
             )
 
-            // Define elements to manipulate.
-            var img = $('<img class="blown" />')
-            img.attr('src', canvasCloneEl.toDataURL())
-            img.css({
-              animation: 'blown-y 1.2s ease-out forwards',
-            })
+            // Container for blown lines.
             var wrapper = $('<div />')
             wrapper.css({
+              display: 'flex',
+              'flex-direction': 'column',
               position: 'absolute',
-              top: startClippingX,
-              width,
-              height,
-              animation: 'blown-x 1.2s ease-in forwards'
+              top: startClippingY,
+              width: clipWidth,
+              height: clipHeight,
+              animation: 'blown-x 1.2s ease-in forwards',
             })
 
-            // Set animation target.
-            var keyframeY = findKeyframesRule('blown-y')
-            // TODO: define dynamically based on line number
-            var peak = '62.5%'
-            keyframeY.appendRule(
-              peak + ' {' +
-                'animation-timing-function: ease-in;' +
-                'transform: translateY(-200px);' +
-              '}'
-            )
-            keyframeY.appendRule(
-              '100% {' +
-                'transform: translateY(' + (game._canvas.height / 2) + 'px);' +
-              '}'
-            )
+            var isGap = rowsAmount !== rowsRange
+            var innerIdxToSkip
 
-            // Add elements to the DOM.
-            img.appendTo(wrapper)
+            if (isGap) {
+              debugger
+              // Skip middle row as it's not yet ready to be removed as there is a hole.
+              // rows to remove: [4, 6] => skip 5 which has 1st index
+              if (rowsAmount === 3) {
+                innerIdxToSkip = 1
+              }
+              // Skip either 2nd or 3rd row as it's not yet ready to be removed.
+              // It could be either:
+              // > 1st index
+              // rows to remove: [3, 5, 6]
+              // 3 + 1 !== 5, hence skip 4 which has 1st index
+              // > 2nd index.
+              // rows to remove: [6, 7, 9]
+              // 7 + 1 !== 9, hence skip 8 which has 2nd index
+              else if (rowsAmount === 4) {
+                rows.forEach((rowIdx, innerIdx) => {
+                  var nextInnerIdx = innerIdx + 1
+                  if ((rowIdx + 1) !== rows[nextInnerIdx]) {
+                    innerIdxToSkip = nextInnerIdx
+                  }
+                })
+              }
+            }
+
+            // Clip necessary amount of rows.
+            for (var innerIdx = 0; innerIdx < rowsRange; ++innerIdx) {
+              if (innerIdx !== innerIdxToSkip) {
+                canvasCloneCtx.drawImage(
+                  game._canvas,
+                  startClippingX,
+                  startClippingY + rowHeight * innerIdx,
+                  clipWidth,
+                  clipHeight / rowsRange,
+                  pasteX,
+                  pasteY,
+                  clipWidth,
+                  clipHeight,
+                )
+
+                var rowImg = $('<img />')
+                rowImg.attr('src', canvasCloneEl.toDataURL())
+                rowImg.css({
+                  height: `${rowHeight}px`,
+                  animation: 'blown-y 1.2s ease-out forwards',
+                })
+
+                rowImg.appendTo(wrapper)
+              }
+              else {
+                var emptyRow = $('section')
+                emptyRow.css({
+                  height: `${rowHeight}px`,
+                })
+
+                emptyRow.appendTo(wrapper)
+              }
+            }
+
             wrapper.appendTo('.game')
-            // setTimeout(() => wrapper.remove(), 1400)
+            setTimeout(() => {
+              stylesheet.deleteRule(ruleName)
+              // wrapper.remove()
+            }, 2000)
           }
 
           for (i=0, len=rows.length; i<len; i++) {
