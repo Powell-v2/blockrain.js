@@ -5,11 +5,10 @@ body {
   font-family:  "Play", sans-serif, serif, monospace;
   display: grid;
 }
+
 .container__game {
-  width: 66vw;
   height: 100vh;
-  max-width: 1000px;
-  background-image: url('../assets/images/bg_logo.png');
+  background-image: url('../assets/images/bg.png');
   background-size: cover;
   display: flex;
   align-items: center;
@@ -20,17 +19,50 @@ body {
 }
 .game {
   position: relative;
+  height: 440px;
+  width: 300px;
   margin-left: 25px;
 }
+
+.vans {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: 400px;
+  overflow-x: hidden;
+}
 .van {
+  position: absolute;
   width: 200px;
   height: 100px;
-  margin-left: 80px;
-  margin-top: 270px;
+  margin-left: 50px;
+}
+.van--hidden {
+  transform: translateX(-350px);
+}
+.van--parked {}
+.van--driving-away {
+  transition: transform 2s ease-in;
+  transform: translateX(500px);
+}
+.van--driving-in {
+  transition: transform 4s ease-out;
+  transform: translateX(0);
+}
+
+.scoreboard {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+.scoreboard ul {
+  list-style: none;
+  text-align: center;
+  padding-left: 0;
 }
 
 @keyframes blown-x {
   100% {
-    transform: translateX(330px);
+    transform: translateX(325px);
   }
 }

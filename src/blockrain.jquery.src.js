@@ -68,6 +68,30 @@
     gameover: function() {
       this.showGameOverMessage();
       this._board.gameover = true;
+
+      // Maintain list of last 10 best scores. {{{
+      const maxRecords = 10
+      const minBestScore = this.___bestScores.length > 0
+        ? Math.min(...this.___bestScores)
+        : 0
+      const currentScore = this.score()
+      if (currentScore > minBestScore) {
+        if (this.___bestScores === maxRecords) {
+          this.___bestScores = this.___bestScores.filter((score) => score !== minBestScore)
+        }
+        this.___bestScores.push(currentScore)
+      }
+
+      const scoreboard = $(`.scoreboard`)
+      scoreboard.find(`ul`).remove()
+      const scoreboardList = $(`<ul></ul>`)
+
+      this.___bestScores.sort((a, b) => b - a).forEach((score) => {
+        scoreboardList.append($(`<li>${score}</li>`))
+      })
+      scoreboard.append(scoreboardList)
+      // }}}
+
       this.options.onGameOver.call(this.element, this._filled.score);
     },
 
@@ -197,6 +221,7 @@
       }
     },
 
+    ___bestScores: [],
 
     // Theme
     _theme: {
@@ -671,16 +696,18 @@
             canvasBlownLine.width = clipWidth
             canvasBlownLine.height = rowHeight
 
+            const animationLength = 1
+
             // Container for all blown lines.
-            var blownLinesWrapper = $('<div />')
-            blownLinesWrapper.css({
+            var $blownLinesWrapper = $('<div />')
+            $blownLinesWrapper.css({
               display: 'flex',
               'flex-direction': 'column',
               position: 'absolute',
               top: startClippingY,
               width: clipWidth,
               height: clipHeight,
-              animation: 'blown-x 1.2s ease-in forwards',
+              animation: `blown-x ${animationLength}s ease-in forwards`,
             })
 
             var isGap = rowsAmount !== rowsRange
@@ -741,12 +768,11 @@
                 const $canvasBlownChunk = $canvasBlownLine.clone()
                 const canvasBlownChunk = $canvasBlownChunk[0]
                 const canvasBlownChunkCtx = canvasBlownChunk.getContext(`2d`)
-                const chunkWidth = (canvasBlownLine.width / game._BLOCK_WIDTH)
+                const chunkWidth = canvasBlownLine.width / game._BLOCK_WIDTH
                 canvasBlownChunk.width = chunkWidth
 
-                const vanHeight = 100
-                const dropDownHeight = (
-                  game._canvas.height - (rowHeight * rows[innerIdx]) - vanHeight
+                const landingTarget = (
+                  ((game._BLOCK_HEIGHT - rows[innerIdx]) * rowHeight) - game.___vanHeight * 0.75
                 )
 
                 // Extract chunks from blown line.
@@ -763,18 +789,22 @@
                     rowHeight,
                   )
 
-                  const peak = 62
+                  const peak = 60
                   const ruleName = `blown_y_row_${innerIdx}_chunk_${chunkIdx}`
                   rules.push(ruleName)
                   stylesheet.insertRule(
                     `@keyframes ${ruleName} {
                       ${peak}% {
                         animation-timing-function: ease-in;
-                        transform: translateY(-${200 + 10 * chunkIdx}px);
+                        transform:
+                          /*rotateY(${360 * peak / 100}deg)*/
+                          translateY(-${350 - 20 * chunkIdx}px);
                       }
 
                       100% {
-                        transform: translateY(${dropDownHeight}px);
+                        transform:
+                          /*rotateY(360deg);*/
+                          translateY(${landingTarget}px);
                       }
                     }`,
                     0
@@ -783,13 +813,13 @@
                   const chunkImg = $('<img />')
                   chunkImg.attr('src', canvasBlownChunk.toDataURL())
                   chunkImg.css({
-                    animation: `${ruleName} 1.${chunkIdx}s ease-out forwards`,
+                    animation: `${ruleName} ${animationLength}s ease-out forwards`,
                   })
 
                   chunkImg.appendTo(blownChunksWrapper)
                 }
 
-                blownChunksWrapper.appendTo(blownLinesWrapper)
+                blownChunksWrapper.appendTo($blownLinesWrapper)
               }
               else {
                 var emptyRow = $('section')
@@ -797,15 +827,51 @@
                   height: `${rowHeight}px`,
                 })
 
-                emptyRow.appendTo(blownLinesWrapper)
+                emptyRow.appendTo($blownLinesWrapper)
               }
             }
 
-            blownLinesWrapper.appendTo('.game')
-            setTimeout(() => {
-              // rules.forEach((name) => stylesheet.deleteRule(name))
-              // blownLinesWrapper.remove()
-            }, 2000)
+            if (!game.___vansSwapping) {
+              const blownLinesOnAnimationEnd = () => {
+                game.___vansSwapping = true
+
+                const parked = $(`.van--parked`)[0]
+                const parkedOnTransitionEnd = () => {
+                  parked.classList.add(`van--hidden`)
+                  parked.classList.remove(`van--driving-away`)
+                  parked.removeEventListener(`transitionend`, parkedOnTransitionEnd)
+                }
+                parked.addEventListener(`transitionend`, parkedOnTransitionEnd)
+                parked.classList.add(`van--driving-away`)
+                parked.classList.remove(`van--parked`)
+
+                const hidden = $(`.van--hidden`)[0]
+                const hiddenOnTransitionEnd = () => {
+                  hidden.classList.add(`van--parked`)
+                  hidden.classList.remove(`van--driving-in`)
+                  game.___vansSwapping = false
+                  hidden.removeEventListener(`transitionend`, hiddenOnTransitionEnd)
+                }
+                hidden.addEventListener(`transitionend`, hiddenOnTransitionEnd)
+                hidden.classList.add(`van--driving-in`)
+                hidden.classList.remove(`van--hidden`)
+
+                rules.forEach((name) => stylesheet.deleteRule(name))
+                $blownLinesWrapper.remove()
+
+                $blownLinesWrapper[0].removeEventListener(
+                  'animationend',
+                  blownLinesOnAnimationEnd
+                )
+              }
+
+              $blownLinesWrapper[0].addEventListener(
+                'animationend',
+                blownLinesOnAnimationEnd
+              )
+
+              $blownLinesWrapper.appendTo('.game')
+            }
           }
 
           for (i=0, len=rows.length; i<len; i++) {
@@ -1384,6 +1450,24 @@
         this._$canvas.css('background-color', this._theme.background);
       }
       this._$gameholder.append(this._$canvas);
+
+      this.___vanHeight = 100
+      $(`.container__inner`).append(
+        $(`
+          <div class="vans">
+            <img
+              class="van van--hidden"
+              style="height: ${this.___vanHeight}px; width: ${this.___vanHeight * 1.5}px;"
+              src="assets/images/van.png"
+            />
+            <img
+              class="van van--parked"
+              style="height: ${this.___vanHeight}px; width: ${this.___vanHeight * 1.5}px;"
+              src="assets/images/van.png"
+            />
+          </div`
+        )
+      );
 
       this._canvas = this._$canvas.get(0);
       this._ctx = this._canvas.getContext('2d');
