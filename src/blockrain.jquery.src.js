@@ -18,7 +18,7 @@
       timeLimit: null,
 
       // Copy
-      playText: 'Breng it on!',
+      playText: 'Press any button to start',
       playButtonText: 'Play',
       gameOverText: 'Game Over',
       restartButtonText: 'Play Again',
@@ -132,9 +132,13 @@
       this._board.render(true);
       this._board.animate();
 
-      this._$start.fadeOut(150);
+      this._$start_1.fadeOut(150);
       this._$gameover.fadeOut(150);
-      this._$score.fadeIn(150);
+
+      this._$score.fadeIn(250);
+      this._$start_2.fadeIn(250, () => {
+        setTimeout(() => this._$start_2.fadeOut(250), 500)
+      });
     },
 
 
@@ -181,7 +185,7 @@
     },
 
     showStartMessage: function() {
-      this._$start.show();
+      this._$start_1.show();
     },
 
     showGameOverMessage: function() {
@@ -261,7 +265,7 @@
     _$game: null,
     _$canvas: null,
     _$gameholder: null,
-    _$start: null,
+    _$start_1: null,
     _$gameover: null,
     _$score: null,
     _$scoreText: null,
@@ -840,7 +844,13 @@
                     0
                   )
 
-                  const landingTargetX = 400 - chunkWidth * chunkIdx
+                  const vanElement = $(`.van`)[0]
+                  const landingTargetX = (
+                    actualRowWidth +
+                    vanElement.clientWidth / 3 +
+                    vanElement.offsetLeft
+                    - chunkWidth * chunkIdx
+                  )
                   const xAxisRuleName = `
                     blown_x_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
                   `
@@ -1036,7 +1046,7 @@
 
         showStartMessage: function() {
           game.___attachGameInitKeyHandlers()
-          game._$start.show();
+          game._$start_1.show();
         },
 
         showGameOverMessage: function() {
@@ -1508,7 +1518,7 @@
       }
       this._$gameholder.append(this._$canvas);
 
-      this.___vanHeight = 100
+      this.___vanHeight = this._$canvas[0].clientHeight * 0.3
       $(`.container__inner`).append(
         $(`
           <div class="vans">
@@ -1555,21 +1565,26 @@
       game._$gameholder.append(game._$score);
 
       // Create the start menu
-      game._$start = $(
-        '<div class="blockrain-start-holder" style="position:absolute;">'+
-          '<div class="blockrain-start">'+
-            '<div class="blockrain-start-msg">'+ this.options.playText +'</div>'+
-          '</div>'+
-        '</div>').hide();
-      game._$gameholder.append(game._$start);
+      game._$start_1 = $(`
+        <section class="message">
+          ${this.options.playText}
+        </section>
+      `).hide();
+      game._$gameholder.append(game._$start_1);
+
+      game._$start_2 = $(`
+        <section class="message">
+          Breng it on!
+        </section>
+      `).hide();
+      game._$gameholder.append(game._$start_2);
 
       // Create the game over menu
-      game._$gameover = $(
-        '<div class="blockrain-game-over-holder" style="position:absolute;">'+
-          '<div class="blockrain-game-over">'+
-            '<div class="blockrain-game-over-msg">'+ this.options.gameOverText +'</div>'+
-          '</div>'+
-        '</div>').hide();
+      game._$gameover = $(`
+        <section class="message message__game_over">
+          ${this.options.gameOverText}
+        </section>
+      `).hide();
       game._$gameover.find('.blockrain-game-over-btn').click(function(event){
         event.preventDefault();
         game.restart();

@@ -8,42 +8,42 @@ body {
 
 .container__game {
   height: 100vh;
+  width: 100vw;
   background-image: url('../assets/images/bg.png');
-  background-size: cover;
-  display: flex;
-  align-items: center;
+  background-size: contain;
+  display: grid;
+  place-items: center;
 }
 .container__inner {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  width: 100vw;
+  height: 75vh;
+  grid-template-columns: 2fr minmax(400px, 20%) 3fr;
+  grid-template-areas: '. tetris vans';
 }
 .game {
+  grid-area: tetris;
   position: relative;
-  height: 440px;
-  width: 300px;
-  margin-left: 25px;
 }
 
 .vans {
+  grid-area: vans;
   position: relative;
   display: flex;
   align-items: flex-end;
-  width: 400px;
   overflow-x: hidden;
 }
 .van {
   position: absolute;
-  width: 200px;
-  height: 100px;
-  margin-left: 50px;
+  margin-left: 100px;
 }
 .van--hidden {
-  transform: translateX(-350px);
+  transform: translateX(-500px);
 }
 .van--parked {}
 .van--driving-away {
-  transition: transform 2s ease-in;
-  transform: translateX(500px);
+  transition: transform 3.5s ease-in;
+  transform: translateX(2500px);
 }
 .van--driving-in {
   transition: transform 4s ease-out;
@@ -65,4 +65,22 @@ body {
   top: 20px;
   right: 20px;
   text-align: center;
+}
+
+.message {
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  width: 100%;
+  padding: 2rem;
+  color: whitesmoke;
+  text-align: center;
+  text-transform: capitalize;
+  font-size: 3.3rem;
+}
+.message__game_over {
+  background-color: rgba(0,0,0,.33);
 }
