@@ -19,6 +19,10 @@
   <p>10 best scores</p>
   <ul></ul>
 </section>
+<section class="timer">
+  <p>Time limit:</p>
+  <p>None</p>
+</section>
 
 <script src="assets/js/jquery-1.11.1.min.js"></script>
 <script src="src/blockrain.jquery.libs.js"></script>
@@ -28,6 +32,7 @@
 <script>
   var $demo = $('.game').blockrain({
     speed: 10,
+    timeLimit: 549,
     onStart: function() {},
     onLine: function() {},
     onGameOver: function() {},

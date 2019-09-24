@@ -15,6 +15,7 @@
       difficulty: 'normal', // Difficulty (normal|nice|evil).
       speed: 20, // The speed of the game. The higher, the faster the pieces go.
       asdwKeys: false, // Enable ASDW keys
+      timeLimit: null,
 
       // Copy
       playText: 'Breng it on!',
@@ -35,7 +36,7 @@
     },
 
     // Custom code.
-    __attachGameInitKeyHandlers: function() {
+    ___attachGameInitKeyHandlers: function() {
       var game = this
 
       function gameStartHandler(evt) {
@@ -58,6 +59,30 @@
     start: function() {
       this._doStart();
       this.options.onStart.call(this.element);
+
+      if (this.options.timeLimit) {
+        this.___timeLeft = this.options.timeLimit
+        const timerElement = $(`.timer p`)[1]
+        const minutes = Math.floor(this.___timeLeft / 60)
+        const seconds = this.___timeLeft % 60
+        timerElement.innerText = `
+          ${minutes}:${seconds < 10 ? '0' + seconds : seconds}
+        `
+        this.___timerId = setInterval(() => {
+          if (this.___timeLeft === 0) {
+            clearInterval(timerId)
+            return this.gameover()
+          }
+          else {
+            this.___timeLeft -= 1
+            const minutes = Math.floor(this.___timeLeft / 60)
+            const seconds = this.___timeLeft % 60
+            timerElement.innerText = `
+              ${minutes}:${seconds < 10 ? '0' + seconds : seconds}
+            `
+          }
+        }, 1000)
+      }
     },
 
     restart: function() {
@@ -91,6 +116,8 @@
       })
       scoreboard.append(scoreboardList)
       // }}}
+
+      clearInterval(this.___timerId)
 
       this.options.onGameOver.call(this.element, this._filled.score);
     },
@@ -158,7 +185,7 @@
     },
 
     showGameOverMessage: function() {
-      this.__attachGameInitKeyHandlers()
+      this.___attachGameInitKeyHandlers()
       this._$gameover.show();
     },
 
@@ -222,6 +249,7 @@
     },
 
     ___bestScores: [],
+    ___timeLeft: 0,
 
     // Theme
     _theme: {
@@ -714,6 +742,7 @@
             var innerIdxToSkip
 
             if (isGap) {
+              // debugger
               // Skip middle row as it's not yet ready to be removed as there is a hole.
               // rows to remove: [4, 6] => skip 5 which has 1st index
               if (rowsRange === 3) {
@@ -1006,7 +1035,7 @@
         },
 
         showStartMessage: function() {
-          game.__attachGameInitKeyHandlers()
+          game.___attachGameInitKeyHandlers()
           game._$start.show();
         },
 
@@ -1500,6 +1529,13 @@
       this._canvas = this._$canvas.get(0);
       this._ctx = this._canvas.getContext('2d');
 
+      if (this.options.timeLimit) {
+        const minutes = Math.floor(this.options.timeLimit / 60)
+        const seconds = this.options.timeLimit % 60
+        $(`.timer p`)[1].innerText = `
+          ${minutes}:${seconds < 10 ? '0' + seconds : seconds}
+        `
+      }
     },
 
 
