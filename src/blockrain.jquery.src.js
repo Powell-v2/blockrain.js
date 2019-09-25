@@ -62,12 +62,10 @@
 
       if (this.options.timeLimit) {
         this.___timeLeft = this.options.timeLimit
-        const timerElement = $(`.timer p`)[1]
+        const timerElement = $(`.timer__countdown`)[0]
         const minutes = Math.floor(this.___timeLeft / 60)
         const seconds = this.___timeLeft % 60
-        timerElement.innerText = `
-          ${minutes}:${seconds < 10 ? '0' + seconds : seconds}
-        `
+        timerElement.innerText = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`
         this.___timerId = setInterval(() => {
           if (this.___timeLeft === 0) {
             clearInterval(timerId)
@@ -77,9 +75,7 @@
             this.___timeLeft -= 1
             const minutes = Math.floor(this.___timeLeft / 60)
             const seconds = this.___timeLeft % 60
-            timerElement.innerText = `
-              ${minutes}:${seconds < 10 ? '0' + seconds : seconds}
-            `
+            timerElement.innerText = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`
           }
         }, 1000)
       }
@@ -107,7 +103,7 @@
         this.___bestScores.push(currentScore)
       }
 
-      const scoreboard = $(`.scoreboard`)
+      const scoreboard = $(`.score__top`)
       scoreboard.find(`ul`).remove()
       const scoreboardList = $(`<ul></ul>`)
 
@@ -135,7 +131,6 @@
       this._$start_1.fadeOut(150);
       this._$gameover.fadeOut(150);
 
-      this._$score.fadeIn(250);
       this._$start_2.fadeIn(250, () => {
         setTimeout(() => this._$start_2.fadeOut(250), 500)
       });
@@ -175,7 +170,7 @@
     score: function(newScore) {
       if( typeof newScore !== 'undefined' && parseInt(newScore) >= 0 ) {
         this._filled.score = parseInt(newScore);
-        this._$scoreText.text(this._filled_score);
+        this._$scoreCounter.text(this._filled_score);
       }
       return this._filled.score;
     },
@@ -254,6 +249,7 @@
 
     ___bestScores: [],
     ___timeLeft: 0,
+    ___blownLinesCount: 0,
 
     // Theme
     _theme: {
@@ -268,7 +264,7 @@
     _$start_1: null,
     _$gameover: null,
     _$score: null,
-    _$scoreText: null,
+    _$scoreCounter: null,
 
 
     // Canvas
@@ -804,10 +800,11 @@
                 const canvasBlownChunk = $canvasBlownChunk[0]
                 const canvasBlownChunkCtx = canvasBlownChunk.getContext(`2d`)
                 const chunkWidth = canvasBlownLine.width / game._BLOCK_WIDTH
+                const actualChunkWidth = actualRowWidth / game._BLOCK_WIDTH
                 canvasBlownChunk.width = chunkWidth
 
                 const landingTargetY = (
-                  ((game._BLOCK_HEIGHT - rows[innerIdx]) * actualRowHeight) - game.___vanHeight * 0.8
+                  ((game._BLOCK_HEIGHT - rows[innerIdx]) * actualRowHeight) - game.___vanHeight * 0.75
                 )
 
                 // Extract chunks from blown line.
@@ -827,9 +824,10 @@
                   const yAxisRuleName = `
                     blown_y_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
                   `
-                  const throwHeight = 200 + 20 * Math.ceil(Math.random() * 10)
+                  const throwHeight = game.___vanHeight * 1.5 + 20 * Math.ceil(Math.random() * 10)
                   const peak = 55
-                  const animationDuration = 1 + landingTargetY / 500
+                  const animationDuration = 1 + throwHeight / 3000
+
                   stylesheet.insertRule(
                     `@keyframes ${yAxisRuleName} {
                       ${peak}% {
@@ -849,7 +847,7 @@
                     actualRowWidth +
                     vanElement.clientWidth / 3 +
                     vanElement.offsetLeft
-                    - chunkWidth * chunkIdx
+                    - actualChunkWidth * chunkIdx
                   )
                   const xAxisRuleName = `
                     blown_x_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
@@ -867,7 +865,8 @@
 
                   const $blownChunkWrapper = $('<section />')
                   $blownChunkWrapper.css({
-                    width: chunkWidth,
+                    'z-index': 30,
+                    width: actualChunkWidth,
                     animation: `${xAxisRuleName} ${animationDuration}s ease-out forwards`
                   })
                   const $chunkImg = $('<img />')
@@ -937,7 +936,7 @@
                 blownLinesOnAnimationEnd
               )
 
-              $blownLinesWrapper.appendTo('.game')
+              $blownLinesWrapper.appendTo(`.blockrain-game-holder`)
             }
           }
 
@@ -958,13 +957,19 @@
           if( numLines >= scores.length ){ numLines = scores.length-1 }
 
           this.score += scores[numLines];
-          game._$scoreText.text(this.score);
+          game._$scoreCounter.text(this.score);
+
+          game.___blownLinesCount += numLines
+          $(`.blown_lines__counter`).text(game.___blownLinesCount)
 
           game.options.onLine.call(game.element, numLines, scores[numLines], this.score);
         },
         _resetScore: function() {
           this.score = 0;
-          game._$scoreText.text(this.score);
+          game._$scoreCounter.text(this.score);
+
+          game.___blownLinesCount = 0
+          $(`.blown_lines__counter`).text(game.___blownLinesCount)
         },
         draw: function() {
           for (var i=0, len=this.data.length, row, color; i<len; i++) {
@@ -1101,6 +1106,15 @@
               result.blockVariation = null;
             }
           }
+
+          const imageSrc = window.BlockrainThemes.brenger.complexBlocks[this.next.blockType]
+          // 1 turn = 90*
+          const turns = window.BlockrainThemes.brenger.complexBlocks[this.next.orientation]
+          const $nextShapePreviewElement = $(`.next_shape__preview`)
+          $nextShapePreviewElement.prop(`src`, imageSrc)
+          $nextShapePreviewElement.css({
+            transform: `translate(${90 * turns}deg)`
+          })
 
           return result;
         },
@@ -1262,8 +1276,8 @@
 
           falling = typeof falling === 'boolean' ? falling : false;
           var borderWidth = game._theme.strokeWidth;
-          var borderDistance = Math.round(game._block_size*0.23);
-          var squareDistance = Math.round(game._block_size*0.30);
+          var borderDistance = Math.round(game._block_size*0.2);
+          var squareDistance = Math.round(game._block_size*0.3);
 
           var color = this.getBlockColor(blockType, blockVariation, blockIndex, falling);
 
@@ -1273,7 +1287,6 @@
           // If it's an image, the block has a specific texture. Use that.
           if( color instanceof Image ) {
             game._ctx.globalAlpha = 1.0;
-
             // Not loaded
             if( color.width === 0 || color.height === 0 ){ return; }
 
@@ -1315,11 +1328,19 @@
               game._ctx.translate(x, y);
               game._ctx.translate(game._block_size/2, game._block_size/2);
               game._ctx.rotate(-Math.PI/2 * blockRotation);
-              game._ctx.drawImage(color,  coords.x, coords.y, coords.w, coords.h,
-                                          -game._block_size/2, -game._block_size/2, game._block_size, game._block_size);
+              game._ctx.drawImage(
+                color,
+                coords.x,
+                coords.y,
+                coords.w,
+                coords.h,
+                -game._block_size/2,
+                -game._block_size/2,
+                game._block_size,
+                game._block_size
+              );
 
               game._ctx.restore();
-
             } else {
               // ERROR
               game._ctx.fillStyle = '#ff0000';
@@ -1538,30 +1559,12 @@
 
       this._canvas = this._$canvas.get(0);
       this._ctx = this._canvas.getContext('2d');
-
-      if (this.options.timeLimit) {
-        const minutes = Math.floor(this.options.timeLimit / 60)
-        const seconds = this.options.timeLimit % 60
-        $(`.timer p`)[1].innerText = `
-          ${minutes}:${seconds < 10 ? '0' + seconds : seconds}
-        `
-      }
     },
 
 
     _createUI: function() {
-
       var game = this;
 
-      // Score
-      game._$score = $(
-        '<div class="blockrain-score-holder" style="position:absolute;">'+
-          '<div class="blockrain-score">'+
-            '<div class="blockrain-score-msg">'+ this.options.scoreText +'</div>'+
-            '<div class="blockrain-score-num">0</div>'+
-          '</div>'+
-        '</div>').hide();
-      game._$scoreText = game._$score.find('.blockrain-score-num');
       game._$gameholder.append(game._$score);
 
       // Create the start menu
@@ -1590,6 +1593,44 @@
         game.restart();
       });
       game._$gameholder.append(game._$gameover);
+
+      game.___$sidebar = $(`
+        <aside class="sidebar">
+          <section class="score">
+            <p class="score__title">Score</p>
+            <p class="score__counter">0</p>
+          </section>
+          <section class="blown_lines">
+            <p class="blown_lines__title">Lines<p>
+            <p class="blown_lines__counter">
+              0
+            <p>
+          </section>
+          <section class="next_shape">
+            <img class="next_shape__preview"/>
+          </section>
+          <section class="score__top">
+            <p class="score_top__title">10 best scores</p>
+            <ul></ul>
+          </section>
+        </aside>
+      `)
+
+      $(`.game`).append(game.___$sidebar)
+      $(`.game`).append($(`
+        <section class="timer">
+          <p class="timer__title">Time Limit</p>
+          <p class="timer__countdown">None</p>
+        </section>
+      `))
+
+      if (this.options.timeLimit) {
+        const minutes = Math.floor(this.options.timeLimit / 60)
+        const seconds = this.options.timeLimit % 60
+        $(`.timer__countdown`).text = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`
+      }
+
+      game._$scoreCounter = $(`.score__counter`)
 
       this._createControls();
     },
