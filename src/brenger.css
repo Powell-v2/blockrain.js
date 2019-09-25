@@ -5,7 +5,7 @@ body {
   margin: 0;
   display: flex;
   justify-content: center;
-  font-family:  "Play", sans-serif, serif, monospace;
+  font-family:  'VT323', sans-serif, serif, monospace;
   display: grid;
 }
 p {
@@ -93,15 +93,20 @@ p[class$="__title"] {
 }
 .logo {
   display: grid;
-  justify-items: center;
+  grid-template-columns: 35% 65%;
+  grid-template-areas: 'above_scoreboard above_gamearea';
+  align-items: center;
   grid-area: logo;
-  height: 100%;
-  width: 65%;
-  margin-top: -0.5rem;
 }
-.logo img {
-  width: inherit;
-  height: inherit;
+.logo h1 {
+  grid-area: above_scoreboard;
+  justify-self: center;
+  font-size: 10vmin;
+  margin: 0;
+  color: dodgerblue;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  margin-top: -1rem;
 }
 .vans {
   grid-area: vans;
