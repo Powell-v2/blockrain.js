@@ -804,9 +804,14 @@
               const actualChunkWidth = actualRowWidth / game._BLOCK_WIDTH
               canvasBlownChunk.width = chunkWidth
 
-              const landingTargetY = (
-                ((game._BLOCK_HEIGHT - rows[innerIdx]) * actualRowHeight) - game.___vanHeight * 0.75
+              const towardsSaucer = -(game.___vanHeight / 2) - (actualRowHeight * (rows[innerIdx] + 1))
+              const towardsVan = (
+                (game._BLOCK_HEIGHT - rows[innerIdx]) * actualRowHeight -
+                game.___vanHeight * 0.75
               )
+              const landingTargetY = game.___vansSwapping
+                ? towardsSaucer
+                : towardsVan
 
               // Extract chunks from blown line.
               for (let chunkIdx = 0; chunkIdx < game._BLOCK_WIDTH; chunkIdx++) {
@@ -829,27 +834,39 @@
                 const peak = 55
                 const animationDuration = 1 + throwHeight / 5000
 
-                stylesheet.insertRule(
-                  `@keyframes ${yAxisRuleName} {
+                const liftAnimation = `
+                  @keyframes ${yAxisRuleName} {
+                    100% {
+                      transform: translateY(${landingTargetY}px);
+                    }
+                  }
+                `
+                const projectileAnimation = `
+                  @keyframes ${yAxisRuleName} {
                     ${peak}% {
                       animation-timing-function: ease-in;
                       transform: translateY(-${throwHeight}px);
                     }
                     100% {
-                      transform:
-                        translateY(${landingTargetY}px);
+                      transform: translateY(${landingTargetY}px);
                     }
-                  }`,
+                  }
+                `
+
+                stylesheet.insertRule(
+                  game.___vansSwapping ? liftAnimation : projectileAnimation,
                   0
                 )
 
                 const vanElement = $(`.van`)[0]
-                const landingTargetX = (
-                  actualRowWidth +
-                  vanElement.clientWidth / 3 +
-                  vanElement.offsetLeft
-                  - actualChunkWidth * chunkIdx
-                )
+                const landingTargetX = game.___vansSwapping
+                  ? (game._BLOCK_WIDTH / 2 - chunkIdx - 0.5) * actualChunkWidth
+                  : (
+                    actualRowWidth +
+                    vanElement.clientWidth / 3 +
+                    vanElement.offsetLeft
+                    - actualChunkWidth * chunkIdx
+                  )
                 const xAxisRuleName = `
                   blown_x_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
                 `
@@ -898,8 +915,55 @@
               // }
             }
 
-            if (!game.___vansSwapping) {
-              const blownLinesOnAnimationEnd = () => {
+            // Saucer scene.
+            if (game.___vansSwapping) {
+              const onAnimationEnd = () => {
+                generatedRules.forEach((name) => stylesheet.deleteRule(name))
+                $blownLinesWrapper.remove()
+                elementWithLongestAnimationDuration.removeEventListener(
+                  'animationend',
+                  onAnimationEnd
+                )
+              }
+
+              elementWithLongestAnimationDuration.addEventListener(
+                'animationend',
+                onAnimationEnd
+              )
+
+              const saucerAnimationName = `saucer_animation_${Date.now()}`
+              stylesheet.insertRule(`
+                @keyframes ${saucerAnimationName} {
+                  15% {
+                    transform: translateY(-${game.___vanHeight * 1.1}px);
+                  }
+                  30% {
+                    animation-timing-function: ease-in;
+                    transform: translateY(-${game.___vanHeight * 1.1}px);
+                  }
+                  100% {
+                    transform: translateY(-5000px);
+                  }
+                }`,
+                stylesheet.cssRules.length
+              )
+
+              const saucer = $(`.saucer`)
+              saucer.css({
+                animation: `${saucerAnimationName} ${longestAnimationDuration * 4}s ease-out`,
+              })
+              const saucerOnAnimationEnd = () => {
+                stylesheet.deleteRule(document.styleSheets[1].cssRules.length - 1)
+                saucer.css({ animation: `unset` })
+                saucer.off(`animationend`, saucerOnAnimationEnd)
+              }
+              saucer.on(`animationend`, saucerOnAnimationEnd)
+
+              $blownLinesWrapper.appendTo(`.blockrain-game-holder`)
+            }
+            // Vans swapping scene.
+            else {
+              const onAnimationEnd = () => {
                 game.___vansSwapping = true
 
                 const parked = $(`.van--parked`)[0]
@@ -928,13 +992,13 @@
 
                 elementWithLongestAnimationDuration.removeEventListener(
                   'animationend',
-                  blownLinesOnAnimationEnd
+                  onAnimationEnd
                 )
               }
 
               elementWithLongestAnimationDuration.addEventListener(
                 'animationend',
-                blownLinesOnAnimationEnd
+                onAnimationEnd
               )
 
               $blownLinesWrapper.appendTo(`.blockrain-game-holder`)
@@ -1558,6 +1622,14 @@
         )
       );
 
+      this._$gameholder.append($(`
+        <img
+          class="saucer"
+          style="height: ${this.___vanHeight}px; width: ${this.___vanHeight * 1.5}px;"
+          src="assets/images/van.png"
+        />
+      `))
+
       this._canvas = this._$canvas.get(0);
       this._ctx = this._canvas.getContext('2d');
     },
@@ -1633,7 +1705,6 @@
       if (this.options.timeLimit) {
         const minutes = Math.floor(this.options.timeLimit / 60)
         const seconds = this.options.timeLimit % 60
-        console.log($(`.timer__countdown`))
         $(`.timer__countdown`).text(`${minutes}:${seconds < 10 ? '0' + seconds : seconds}`)
       }
 

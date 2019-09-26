@@ -122,12 +122,22 @@ p[class$="__title"] {
 }
 .van--parked {}
 .van--driving-away {
-  transition: transform 2s ease-in;
+  transition: transform 100s ease-in;
+  /* transition: transform 2s ease-in; */
   transform: translateX(2500px);
 }
 .van--driving-in {
-  transition: transform 2.5s ease-out;
+  transition: transform 100s ease-out;
+  /* transition: transform 2.5s ease-out; */
   transform: translateX(0);
+}
+.saucer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -25%;
+  transform: translateY(-1000px);
+  z-index: 50;
 }
 .message {
   position: absolute;
