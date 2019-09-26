@@ -738,33 +738,34 @@
               // }}}
             })
 
-            var isGap = rowsAmount !== rowsRange
-            var innerIdxToSkip
+            // COMBAK: Potentially skip launching holed lines.
+            // var isGap = rowsAmount !== rowsRange
+            // var innerIdxToSkip
 
-            if (isGap) {
-              debugger
-              // Skip middle row as it's not yet ready to be removed as there is a hole.
-              // rows to remove: [4, 6] => skip 5 which has 1st index
-              if (rowsRange === 3) {
-                innerIdxToSkip = 1
-              }
-              // Skip either 2nd or 3rd row as it's not yet ready to be removed.
-              // It could be either:
-              // > 1st index
-              // rows to remove: [3, 5, 6]
-              // 3 + 1 !== 5, hence skip 4 which has 1st index
-              // > 2nd index.
-              // rows to remove: [6, 7, 9]
-              // 7 + 1 !== 9, hence skip 8 which has 2nd index
-              else if (rowsRange === 4) {
-                rows.forEach((rowIdx, innerIdx) => {
-                  var nextInnerIdx = innerIdx + 1
-                  if ((rowIdx + 1) !== rows[nextInnerIdx]) {
-                    innerIdxToSkip = nextInnerIdx
-                  }
-                })
-              }
-            }
+            // if (isGap) {
+            //   debugger
+            //   // Skip middle row as it's not yet ready to be removed as there is a hole.
+            //   // rows to remove: [4, 6] => skip 5 which has 1st index
+            //   if (rowsRange === 3) {
+            //     innerIdxToSkip = 1
+            //   }
+            //   // Skip either 2nd or 3rd row as it's not yet ready to be removed.
+            //   // It could be either:
+            //   // > 1st index
+            //   // rows to remove: [3, 5, 6]
+            //   // 3 + 1 !== 5, hence skip 4 which has 1st index
+            //   // > 2nd index.
+            //   // rows to remove: [6, 7, 9]
+            //   // 7 + 1 !== 9, hence skip 8 which has 2nd index
+            //   else if (rowsRange === 4) {
+            //     rows.forEach((rowIdx, innerIdx) => {
+            //       var nextInnerIdx = innerIdx + 1
+            //       if ((rowIdx + 1) !== rows[nextInnerIdx]) {
+            //         innerIdxToSkip = nextInnerIdx
+            //       }
+            //     })
+            //   }
+            // }
 
             // Define animation.
             const [ stylesheet ] = Array.from(document.styleSheets)
@@ -775,126 +776,126 @@
 
             // Clip necessary amount of blown lines.
             for (let innerIdx = 0; innerIdx < rowsRange; ++innerIdx) {
-              if (innerIdx !== innerIdxToSkip) {
-                // Container for individual pieces.
-                let $blownChunksWrapper = $('<section />')
-                $blownChunksWrapper.css({
-                  display: `flex`,
+              // if (innerIdx !== innerIdxToSkip) {
+              // Container for individual pieces.
+              let $blownChunksWrapper = $('<section />')
+              $blownChunksWrapper.css({
+                display: `flex`,
+                height: `${actualRowHeight}px`,
+              })
+
+              // Extract single line.
+              canvasBlownLineCtx.drawImage(
+                game._canvas,
+                startClippingX,
+                startClippingY + rowHeight * innerIdx,
+                clipWidth,
+                rowHeight,
+                pasteX,
+                pasteY,
+                clipWidth,
+                rowHeight,
+              )
+
+              const $canvasBlownChunk = $canvasBlownLine.clone()
+              const canvasBlownChunk = $canvasBlownChunk[0]
+              const canvasBlownChunkCtx = canvasBlownChunk.getContext(`2d`)
+              const chunkWidth = canvasBlownLine.width / game._BLOCK_WIDTH
+              const actualChunkWidth = actualRowWidth / game._BLOCK_WIDTH
+              canvasBlownChunk.width = chunkWidth
+
+              const landingTargetY = (
+                ((game._BLOCK_HEIGHT - rows[innerIdx]) * actualRowHeight) - game.___vanHeight * 0.75
+              )
+
+              // Extract chunks from blown line.
+              for (let chunkIdx = 0; chunkIdx < game._BLOCK_WIDTH; chunkIdx++) {
+                canvasBlownChunkCtx.drawImage(
+                  canvasBlownLine,
+                  chunkWidth * chunkIdx,
+                  0,
+                  chunkWidth,
+                  rowHeight,
+                  0,
+                  0,
+                  chunkWidth,
+                  rowHeight,
+                )
+
+                const yAxisRuleName = `
+                  blown_y_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
+                `
+                const throwHeight = game.___vanHeight * 1.6 + 20 * Math.ceil(Math.random() * 10)
+                const peak = 55
+                const animationDuration = 1 + throwHeight / 5000
+
+                stylesheet.insertRule(
+                  `@keyframes ${yAxisRuleName} {
+                    ${peak}% {
+                      animation-timing-function: ease-in;
+                      transform: translateY(-${throwHeight}px);
+                    }
+                    100% {
+                      transform:
+                        translateY(${landingTargetY}px);
+                    }
+                  }`,
+                  0
+                )
+
+                const vanElement = $(`.van`)[0]
+                const landingTargetX = (
+                  actualRowWidth +
+                  vanElement.clientWidth / 3 +
+                  vanElement.offsetLeft
+                  - actualChunkWidth * chunkIdx
+                )
+                const xAxisRuleName = `
+                  blown_x_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
+                `
+                stylesheet.insertRule(
+                  `@keyframes ${xAxisRuleName} {
+                    100% {
+                      transform: translateX(${landingTargetX}px);
+                    }
+                  }`,
+                  0
+                )
+
+                generatedRules.push(yAxisRuleName, xAxisRuleName)
+
+                const $blownChunkWrapper = $('<section />')
+                $blownChunkWrapper.css({
+                  'z-index': 30,
+                  width: actualChunkWidth,
+                  animation: `${xAxisRuleName} ${animationDuration}s ease-out forwards`
+                })
+                const $chunkImg = $('<img />')
+                $chunkImg.attr('src', canvasBlownChunk.toDataURL())
+                $chunkImg.css({
                   height: `${actualRowHeight}px`,
+                  animation: `${yAxisRuleName} ${animationDuration}s ease-out forwards`,
                 })
 
-                // Extract single line.
-                canvasBlownLineCtx.drawImage(
-                  game._canvas,
-                  startClippingX,
-                  startClippingY + rowHeight * innerIdx,
-                  clipWidth,
-                  rowHeight,
-                  pasteX,
-                  pasteY,
-                  clipWidth,
-                  rowHeight,
-                )
-
-                const $canvasBlownChunk = $canvasBlownLine.clone()
-                const canvasBlownChunk = $canvasBlownChunk[0]
-                const canvasBlownChunkCtx = canvasBlownChunk.getContext(`2d`)
-                const chunkWidth = canvasBlownLine.width / game._BLOCK_WIDTH
-                const actualChunkWidth = actualRowWidth / game._BLOCK_WIDTH
-                canvasBlownChunk.width = chunkWidth
-
-                const landingTargetY = (
-                  ((game._BLOCK_HEIGHT - rows[innerIdx]) * actualRowHeight) - game.___vanHeight * 0.75
-                )
-
-                // Extract chunks from blown line.
-                for (let chunkIdx = 0; chunkIdx < game._BLOCK_WIDTH; chunkIdx++) {
-                  canvasBlownChunkCtx.drawImage(
-                    canvasBlownLine,
-                    chunkWidth * chunkIdx,
-                    0,
-                    chunkWidth,
-                    rowHeight,
-                    0,
-                    0,
-                    chunkWidth,
-                    rowHeight,
-                  )
-
-                  const yAxisRuleName = `
-                    blown_y_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
-                  `
-                  const throwHeight = game.___vanHeight * 1.6 + 20 * Math.ceil(Math.random() * 10)
-                  const peak = 55
-                  const animationDuration = 1 + throwHeight / 5000
-
-                  stylesheet.insertRule(
-                    `@keyframes ${yAxisRuleName} {
-                      ${peak}% {
-                        animation-timing-function: ease-in;
-                        transform: translateY(-${throwHeight}px);
-                      }
-                      100% {
-                        transform:
-                          translateY(${landingTargetY}px);
-                      }
-                    }`,
-                    0
-                  )
-
-                  const vanElement = $(`.van`)[0]
-                  const landingTargetX = (
-                    actualRowWidth +
-                    vanElement.clientWidth / 3 +
-                    vanElement.offsetLeft
-                    - actualChunkWidth * chunkIdx
-                  )
-                  const xAxisRuleName = `
-                    blown_x_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
-                  `
-                  stylesheet.insertRule(
-                    `@keyframes ${xAxisRuleName} {
-                      100% {
-                        transform: translateX(${landingTargetX}px);
-                      }
-                    }`,
-                    0
-                  )
-
-                  generatedRules.push(yAxisRuleName, xAxisRuleName)
-
-                  const $blownChunkWrapper = $('<section />')
-                  $blownChunkWrapper.css({
-                    'z-index': 30,
-                    width: actualChunkWidth,
-                    animation: `${xAxisRuleName} ${animationDuration}s ease-out forwards`
-                  })
-                  const $chunkImg = $('<img />')
-                  $chunkImg.attr('src', canvasBlownChunk.toDataURL())
-                  $chunkImg.css({
-                    height: `${actualRowHeight}px`,
-                    animation: `${yAxisRuleName} ${animationDuration}s ease-out forwards`,
-                  })
-
-                  if (animationDuration > longestAnimationDuration) {
-                    longestAnimationDuration = animationDuration
-                    elementWithLongestAnimationDuration = $blownChunkWrapper[0]
-                  }
-
-                  $chunkImg.appendTo($blownChunkWrapper)
-                  $blownChunkWrapper.appendTo($blownChunksWrapper)
+                if (animationDuration > longestAnimationDuration) {
+                  longestAnimationDuration = animationDuration
+                  elementWithLongestAnimationDuration = $blownChunkWrapper[0]
                 }
 
-                $blownChunksWrapper.appendTo($blownLinesWrapper)
+                $chunkImg.appendTo($blownChunkWrapper)
+                $blownChunkWrapper.appendTo($blownChunksWrapper)
               }
-              else {
-                var emptyRow = $('section')
-                emptyRow.css({
-                  height: `${actualRowHeight}px`,
-                })
 
-                emptyRow.appendTo($blownLinesWrapper)
-              }
+              $blownChunksWrapper.appendTo($blownLinesWrapper)
+              // }
+              // else {
+              //   var emptyRow = $('<section />')
+              //   emptyRow.css({
+              //     height: `${actualRowHeight}px`,
+              //   })
+              //
+              //   emptyRow.appendTo($blownLinesWrapper)
+              // }
             }
 
             if (!game.___vansSwapping) {
