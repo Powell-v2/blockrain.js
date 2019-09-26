@@ -103,7 +103,7 @@
         this.___bestScores.push(currentScore)
       }
 
-      const scoreboard = $(`.score__top`)
+      const scoreboard = $(`.score_top`)
       scoreboard.find(`ul`).remove()
       const scoreboardList = $(`<ul></ul>`)
 
@@ -742,7 +742,7 @@
             var innerIdxToSkip
 
             if (isGap) {
-              // debugger
+              debugger
               // Skip middle row as it's not yet ready to be removed as there is a hole.
               // rows to remove: [4, 6] => skip 5 which has 1st index
               if (rowsRange === 3) {
@@ -824,9 +824,9 @@
                   const yAxisRuleName = `
                     blown_y_row_${innerIdx}_chunk_${chunkIdx}_${Date.now()}
                   `
-                  const throwHeight = game.___vanHeight * 1.5 + 20 * Math.ceil(Math.random() * 10)
+                  const throwHeight = game.___vanHeight * 1.6 + 20 * Math.ceil(Math.random() * 10)
                   const peak = 55
-                  const animationDuration = 1 + throwHeight / 3000
+                  const animationDuration = 1 + throwHeight / 5000
 
                   stylesheet.insertRule(
                     `@keyframes ${yAxisRuleName} {
@@ -1539,7 +1539,7 @@
       }
       this._$gameholder.append(this._$canvas);
 
-      this.___vanHeight = this._$canvas[0].clientHeight * 0.3
+      this.___vanHeight = this._$canvas[0].clientHeight * 0.75
       $(`.container__inner`).append(
         $(`
           <div class="vans">
@@ -1609,7 +1609,7 @@
           <section class="next_shape">
             <img class="next_shape__preview"/>
           </section>
-          <section class="score__top">
+          <section class="score_top">
             <p class="score_top__title">10 best scores</p>
             <ul></ul>
           </section>
@@ -1621,6 +1621,11 @@
         <section class="timer">
           <p class="timer__title">Time Limit</p>
           <p class="timer__countdown">None</p>
+        </section>
+      `))
+      $(`.game`).append($(`
+        <section class="logo">
+          <h1>Brenger</h1>
         </section>
       `))
 
