@@ -1633,7 +1633,8 @@
       if (this.options.timeLimit) {
         const minutes = Math.floor(this.options.timeLimit / 60)
         const seconds = this.options.timeLimit % 60
-        $(`.timer__countdown`).text = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`
+        console.log($(`.timer__countdown`))
+        $(`.timer__countdown`).text(`${minutes}:${seconds < 10 ? '0' + seconds : seconds}`)
       }
 
       game._$scoreCounter = $(`.score__counter`)
