@@ -70,8 +70,8 @@ p[class$="__title"] {
 
 }
 .next_shape__preview {
-  max-height: 80%;
-  max-width: 80%;
+  width: 3vh;
+  height: auto;
   object-fit: scale-down;
 }
 .timer {
