@@ -1,35 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>Brenger Tetris</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
+  >
   <link rel="shortcut icon" href="assets/images/favicon.png">
-  <link href="https://fonts.googleapis.com/css?family=VT323&display=swap&subset=latin-ext" rel="stylesheet">
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=VT323&display=swap&subset=latin-ext"
+  >
   <link title="main" rel="stylesheet" href="src/styles.css">
 </head>
 
 <body>
-<section class="container__game">
-  <div class="container__inner">
-    <div class="game"></div>
-  </div>
-</section>
+  <section class="container__game">
+    <div class="container__inner">
+      <div class="game" />
+    </div>
+  </section>
 
-<script src="assets/js/jquery-1.11.1.min.js"></script>
-<script src="src/blockrain.jquery.libs.js"></script>
-<script src="src/blockrain.jquery.src.js"></script>
-<script src="src/blockrain.jquery.themes.js"></script>
+  <script src="assets/js/jquery-1.11.1.min.js"></script>
+  <script src="src/jquery.libs.js"></script>
+  <script src="src/index.js"></script>
+  <script src="src/themes.js"></script>
 
-<script>
-  var $demo = $('.game').blockrain({
-    speed: 10,
-    timeLimit: 549,
-    onStart: function() {},
-    onLine: function() {},
-    onGameOver: function() {},
-  });
-</script>
-
+  <script>
+    $(`.game`).blockrain({
+      speed: 15,
+      timeLimit: 549,
+      onStart: () => {},
+      onLine: () => {},
+      onGameOver: () => {},
+    });
+  </script>
 </body>
 </html>
