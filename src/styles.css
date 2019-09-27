@@ -122,13 +122,11 @@ p[class$="__title"] {
 }
 .van--parked {}
 .van--driving-away {
-  transition: transform 100s ease-in;
-  /* transition: transform 2s ease-in; */
+  transition: transform 2s ease-in;
   transform: translateX(2500px);
 }
 .van--driving-in {
-  transition: transform 100s ease-out;
-  /* transition: transform 2.5s ease-out; */
+  transition: transform 2.5s ease-out;
   transform: translateX(0);
 }
 .saucer {
